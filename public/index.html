@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>TalkSpace</title>
+<style>
+body {
+  font-family: Arial;
+  background-color: var(--bg);
+  color: var(--text);
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+#box {
+  width: 400px;
+  margin-top: 20px;
+  padding: 10px;
+  border-radius: 10px;
+  background-color: var(--card);
+  box-shadow: 0 0 10px #0004;
+}
+input, button, select {
+  margin: 5px;
+  padding: 8px;
+  border-radius: 5px;
+  border: none;
+}
+button { cursor: pointer; }
+#chat { height: 250px; overflow-y: auto; border-radius: 5px; padding: 5px; background-color: var(--bg2); }
+.msg { margin: 3px 0; padding: 5px; border-radius: 5px; }
+.me { background: var(--me); }
+.other { background: var(--other); }
+#theme { position: fixed; top: 10px; right: 10px; }
+</style>
+</head>
+<body>
+<button id="theme">Сменить тему</button>
+<div id="box">
+<h2>TalkSpace</h2>
+<div id="auth">
+<input id="nick" placeholder="Ник">
+<input id="pass" type="password" placeholder="Пароль">
+<input id="avatar" placeholder="Ссылка на аватар">
+<button id="reg">Регистрация</button>
+<button id="log">Войти</button>
+</div>
+
+<div id="main" style="display:none">
+<p id="userInfo"></p>
+<select id="mode">
+<option value="all">Общий чат</option>
+<option value="pm">Личные</option>
+</select>
+<input id="to" placeholder="Кому" style="display:none">
+<div id="chat"></div>
+<input id="msg" placeholder="Сообщение">
+<button id="send">Отправить</button>
+</div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const s = io()
+let nick = ""
+let theme = "dark"
+
+function setTheme(t) {
+  if (t == "dark") {
+    document.documentElement.style.setProperty("--bg", "#000")
+    document.documentElement.style.setProperty("--bg2", "#111")
+    document.documentElement.style.setProperty("--card", "#0a0a0a")
+    document.documentElement.style.setProperty("--text", "#0f0")
+    document.documentElement.style.setProperty("--me", "#030")
+    document.documentElement.style.setProperty("--other", "#050")
+  } else {
+    document.documentElement.style.setProperty("--bg", "#fff")
+    document.documentElement.style.setProperty("--bg2", "#eef")
+    document.documentElement.style.setProperty("--card", "#ddf")
+    document.documentElement.style.setProperty("--text", "#00f")
+    document.documentElement.style.setProperty("--me", "#ccf")
+    document.documentElement.style.setProperty("--other", "#bbf")
+  }
+}
+setTheme("dark")
+
+document.getElementById("theme").onclick = () => {
+  theme = theme == "dark" ? "light" : "dark"
+  setTheme(theme)
+}
+
+document.getElementById("reg").onclick = async () => {
+  const nick = document.getElementById("nick").value
+  const pass = document.getElementById("pass").value
+  const avatar = document.getElementById("avatar").value
+  const res = await fetch("/register", {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({nick, pass, avatar})
+  })
+  const r = await res.json()
+  alert(r.ok ? "Регистрация успешна" : r.msg)
+}
+
+document.getElementById("log").onclick = async () => {
+  nick = document.getElementById("nick").value
+  const pass = document.getElementById("pass").value
+  const res = await fetch("/login", {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({nick, pass})
+  })
+  const r = await res.json()
+  if (!r.ok) return alert("Неверный логин или пароль")
+  document.getElementById("auth").style.display = "none"
+  document.getElementById("main").style.display = "block"
+  document.getElementById("userInfo").innerHTML = "Вы вошли как " + nick
+  s.emit("join", nick)
+}
+
+document.getElementById("send").onclick = () => {
+  const msg = document.getElementById("msg").value
+  const mode = document.getElementById("mode").value
+  const to = document.getElementById("to").value
+  if (mode == "all") s.emit("chatAll", msg)
+  else s.emit("chatPm", {to, msg})
+  document.getElementById("msg").value = ""
+}
+
+document.getElementById("mode").onchange = e => {
+  document.getElementById("to").style.display = e.target.value == "pm" ? "inline" : "none"
+}
+s.on("chatAll", d => addMsg(d.nick + ": " + d.msg, d.nick == nick))
+s.on("chatPm", d => {
+  if (d.from == nick || d.to == nick)
+    addMsg("(ЛС) " + d.from + " -> " + d.to + ": " + d.msg, d.from == nick)
+})
+
+function addMsg(text, me) {
+  const div = document.createElement("div")
+  div.className = "msg " + (me ? "me" : "other")
+  div.innerText = text
+  document.getElementById("chat").appendChild(div)
+  div.scrollIntoView()
+}
+</script>
+</body>
+</html>
