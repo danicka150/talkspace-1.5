@@ -1,102 +1,111 @@
-const express = require("express");
-const http = require("http");
-const { Server } = require("socket.io");
-const cors = require("cors");
+var express = require("express");
+var http = require("http");
+var fs = require("fs");
+var socketio = require("socket.io");
 
-const app = express();
-app.use(cors());
+var app = express();
+var server = http.createServer(app);
+var io = socketio(server);
+
+app.use(express.json());
 app.use(express.static("public"));
 
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: "*"
+var DATA_FILE = "data.json";
+
+// Создать файл данных если нет
+if (!fs.existsSync(DATA_FILE)) {
+  fs.writeFileSync(DATA_FILE, JSON.stringify({ users: [], messages: [], groups: {} }));
+}
+
+// Чтение/запись данных
+function readData() {
+  var data = fs.readFileSync(DATA_FILE);
+  return JSON.parse(data);
+}
+function writeData(d) {
+  fs.writeFileSync(DATA_FILE, JSON.stringify(d));
+}
+
+// Регистрация
+app.post("/register", function(req, res){
+  var nick = req.body.nick;
+  var pass = req.body.pass;
+  var avatar = req.body.avatar || "😎";
+  if (!nick || !pass) { res.json({ok:false, msg:"Введите ник и пароль"}); return; }
+  var d = readData();
+  for(var i=0;i<d.users.length;i++){ if(d.users[i].nick==nick){ res.json({ok:false, msg:"Ник занят"}); return; } }
+  d.users.push({nick:nick, pass:pass, avatar:avatar});
+  writeData(d);
+  res.json({ok:true});
+});
+
+// Вход
+app.post("/login", function(req,res){
+  var nick=req.body.nick;
+  var pass=req.body.pass;
+  var d=readData();
+  for(var i=0;i<d.users.length;i++){
+    if(d.users[i].nick==nick && d.users[i].pass==pass){ res.json({ok:true, avatar:d.users[i].avatar}); return; }
   }
+  res.json({ok:false});
 });
 
-let users = {};
-let messages = [];
-let groups = {};
+// Socket.IO
+io.on("connection", function(socket){
+  socket.nick = null;
 
-io.on("connection", function(socket) {
-  console.log("Новое подключение:", socket.id);
+  socket.on("join", function(nick){ socket.nick=nick; });
 
-  socket.on("register", function(nick, cb) {
-    if (!nick || users[nick]) {
-      cb(false);
-      return;
-    }
-
-    users[nick] = { id: socket.id, name: nick };
-    console.log("Пользователь подключился:", nick);
-    io.emit("userList", Object.keys(users));
-    cb(true);
+  // Общий чат
+  socket.on("chatAll", function(msg){
+    io.emit("chatAll", {nick:socket.nick, msg:msg});
+    var d = readData();
+    d.messages.push({from:socket.nick, to:"all", msg:msg, time:(new Date()).getTime()});
+    writeData(d);
   });
 
-  socket.on("sendMessage", function(data) {
-    messages.push(data);
-    io.emit("message", data);
+  // Личные сообщения
+  socket.on("chatPm", function(data){
+    var d = readData();
+    d.messages.push({from:socket.nick, to:data.to, msg:data.msg, time:(new Date()).getTime()});
+    writeData(d);
+    io.emit("chatPm", {from:socket.nick, to:data.to, msg:data.msg});
   });
 
-  socket.on("createGroup", function(name, isPublic, creator, cb) {
-    if (!name || groups[name]) {
-      cb(false);
-      return;
-    }
-
-    groups[name] = {
-      name: name,
-      public: isPublic,
-      members: [creator],
-      messages: []
-    };
-
-    io.emit("groupList", Object.keys(groups));
-    cb(true);
+  // Создать группу
+  socket.on("createGroup", function(data){
+    var d = readData();
+    var id = "g" + (new Date()).getTime();
+    d.groups[id] = {id:id, name:data.name, public:data.public, members:[socket.nick], messages:[]};
+    writeData(d);
+    io.emit("groupCreated", d.groups[id]);
   });
 
-  socket.on("joinGroup", function(name, nick, cb) {
-    if (!groups[name]) {
-      cb(false);
-      return;
-    }
-
-    if (!groups[name].members.includes(nick)) {
-      groups[name].members.push(nick);
-    }
-
-    cb(true);
+  // Сообщение в группе
+  socket.on("groupMessage", function(data){
+    var d = readData();
+    var g = d.groups[data.groupId];
+    if (g) { g.messages.push({from:socket.nick, msg:data.msg, time:(new Date()).getTime()}); writeData(d); io.emit("groupMessage", {groupId:data.groupId, from:socket.nick, msg:data.msg}); }
   });
 
-  socket.on("groupMessage", function(data) {
-    const grp = groups[data.group];
-    if (grp) {
-      grp.messages.push({
-        from: data.from,
-        text: data.text,
-        time: Date.now()
-      });
-      io.emit("groupMessage", data);
-    }
+  // Пригласить в группу
+  socket.on("inviteToGroup", function(data){
+    var d = readData();
+    var g = d.groups[data.groupId];
+    if (g) { var found=false; for(var i=0;i<g.members.length;i++){ if(g.members[i]==data.user){ found=true; } } if(!found){ g.members.push(data.user); writeData(d); } }
   });
 
-  socket.on("disconnect", function() {
-    let nick = null;
-    for (let name in users) {
-      if (users[name].id === socket.id) {
-        nick = name;
-        delete users[name];
-        break;
-      }
-    }
-
-    if (nick) {
-      console.log("Пользователь отключился:", nick);
-      io.emit("userList", Object.keys(users));
-    }
+  // Получить все данные
+  socket.on("fetchInit", function(cb){
+    var d = readData();
+    var safeUsers = [];
+    for(var i=0;i<d.users.length;i++){ safeUsers.push({nick:d.users[i].nick, avatar:d.users[i].avatar}); }
+    cb({users:safeUsers, groups:d.groups, messages:d.messages});
   });
 });
 
-server.listen(3000, function() {
-  console.log("Сервер запущен на порту 3000");
-});
+// Всегда отдавать index.html
+app.get("*", function(req,res){ res.sendFile(__dirname+"/public/index.html"); });
+
+var PORT = process.env.PORT || 3000;
+server.listen(PORT, function(){ console.log("Сервер запущен на порту "+PORT); });
