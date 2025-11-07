@@ -1,277 +1,445 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>TalkSpace</title>
 <style>
-:root {
-  --bg: #000;
-  --text: #0f0;
-  --bubble-me: #032;
-  --bubble-other: #060;
-  --card: #0a0a0a;
-  --accent: #0f0;
+:root{
+  --bg:#0b0b0b; --card:#0f0f0f; --text:#bfffbf; --accent:#00ff66;
+  --me:#013; --other:#022;
 }
-.light {
-  --bg: #fff;
-  --text: #00f;
-  --bubble-me: #ccf;
-  --bubble-other: #bbf;
-  --card: #eef;
-  --accent: #00f;
+.light{
+  --bg:#ffffff; --card:#f3f7ff; --text:#003366; --accent:#0077ff;
+  --me:#dff; --other:#eef;
 }
-body {
-  font-family: Arial, sans-serif;
-  background-color: var(--bg);
-  color: var(--text);
-  margin: 0;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-header {
-  background: var(--card);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px;
-  box-shadow: 0 2px 5px #0004;
-}
-#themeToggle {
-  background: none;
-  border: none;
-  color: var(--accent);
-  font-size: 22px;
-  cursor: pointer;
-}
-#chatList, #chatWindow {
-  flex: 1;
-  display: none;
-  flex-direction: column;
-}
-#chatList.active, #chatWindow.active {
-  display: flex;
-}
-#chats {
-  flex: 1;
-  overflow-y: auto;
-}
-.chat-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px;
-  border-bottom: 1px solid #333;
-  cursor: pointer;
-}
-.chat-item:hover { background: #111; }
-.chat-item img {
-  width: 40px; height: 40px; border-radius: 50%;
-}
-#chatMessages {
-  flex: 1;
-  padding: 10px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-}
-.msg {
-  max-width: 75%;
-  margin: 5px 0;
-  padding: 8px 10px;
-  border-radius: 10px;
-  word-wrap: break-word;
-}
-.me { align-self: flex-end; background: var(--bubble-me); }
-.other { align-self: flex-start; background: var(--bubble-other); }
-.msg img {
-  width: 24px; height: 24px; border-radius: 50%; margin-right: 5px; vertical-align: middle;
-}
-#msgInput {
-  display: flex;
-  padding: 10px;
-  background: var(--card);
-}
-#msgInput input {
-  flex: 1;
-  border: none;
-  padding: 8px;
-  border-radius: 5px;
-}
-#msgInput button {
-  background: var(--accent);
-  border: none;
-  margin-left: 5px;
-  padding: 8px 12px;
-  border-radius: 5px;
-  color: #000;
-  font-weight: bold;
-}
-#backBtn {
-  background: none;
-  border: none;
-  color: var(--accent);
-  font-size: 20px;
-  cursor: pointer;
-  margin-right: 10px;
-}
-#auth {
-  margin: auto;
-  text-align: center;
-}
-#auth input, #auth button {
-  display: block;
-  margin: 10px auto;
-  padding: 8px;
-  border-radius: 5px;
-  border: none;
-}
-#auth button {
-  background: var(--accent);
-  color: #000;
-  font-weight: bold;
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column}
+header{height:56px;background:var(--card);display:flex;align-items:center;justify-content:space-between;padding:8px 12px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand h1{margin:0;font-size:18px}
+.controls{display:flex;gap:8px;align-items:center}
+.btn{background:var(--accent);border:none;padding:8px 10px;border-radius:8px;color:#000;font-weight:700;cursor:pointer}
+.iconbtn{background:transparent;border:none;color:var(--text);font-size:18px;cursor:pointer}
+.container{flex:1;display:flex;overflow:hidden}
+.sidebar{width:320px;background:var(--card);border-right:1px solid rgba(0,0,0,0.4);display:flex;flex-direction:column}
+.search{padding:10px}
+.search input{width:100%;padding:8px;border-radius:8px;border:0}
+.list{flex:1;overflow:auto}
+.item{display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid rgba(255,255,255,0.02);cursor:pointer}
+.item:hover{background:rgba(255,255,255,0.02)}
+.avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;background:rgba(255,255,255,0.03)}
+.title{font-weight:700}
+.subtitle{font-size:12px;color:rgba(255,255,255,0.6)}
+.main{flex:1;display:flex;flex-direction:column}
+.chatHeader{height:64px;display:flex;align-items:center;gap:12px;padding:10px;border-bottom:1px solid rgba(255,255,255,0.02)}
+.chatMessages{flex:1;padding:12px;overflow:auto;display:flex;flex-direction:column;gap:6px}
+.msg{max-width:75%;padding:10px;border-radius:12px;word-break:break-word;display:inline-flex;align-items:center;gap:8px}
+.me{align-self:flex-end;background:var(--me)}
+.other{align-self:flex-start;background:var(--other)}
+.msg .av{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center}
+.inputRow{display:flex;padding:10px;border-top:1px solid rgba(255,255,255,0.02);gap:8px;background:var(--card)}
+.inputRow input{flex:1;padding:10px;border-radius:10px;border:0}
+.small{font-size:12px;color:rgba(255,255,255,0.6)}
+.hidden{display:none}
+.settingsPanel{position:fixed;right:12px;top:70px;background:var(--card);padding:12px;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,0.6);min-width:240px;z-index:40}
+.modal{position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:50}
+.box{background:var(--card);padding:12px;border-radius:10px;min-width:280px}
+.row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+@media(max-width:800px){
+  .sidebar{width:100%;position:fixed;top:56px;left:0;bottom:auto;height:50%;z-index:30}
+  .main{position:fixed;top:56px;left:0;right:0;bottom:0}
+  .hide-mobile{display:none}
 }
 </style>
 </head>
 <body>
 <header>
-  <div id="headerLeft">
-    <button id="backBtn" style="display:none">←</button>
-    <h2>TalkSpace</h2>
+  <div class="brand">
+    <button id="homeBtn" class="iconbtn">🏠</button>
+    <h1>TalkSpace</h1>
   </div>
-  <button id="themeToggle">🌙</button>
+  <div class="controls">
+    <button id="createBtn" class="btn">Создать группу</button>
+    <button id="settingsBtn" class="iconbtn">⚙️</button>
+  </div>
 </header>
 
-<div id="auth">
-  <h3>Вход или регистрация</h3>
-  <input id="nick" placeholder="Ник">
-  <input id="pass" type="password" placeholder="Пароль">
-  <input id="avatar" placeholder="Ссылка на аватар (необязательно)">
-  <button id="reg">Регистрация</button>
-  <button id="log">Войти</button>
+<div class="container">
+  <aside class="sidebar" id="sidebar">
+    <div class="search">
+      <input id="search" placeholder="Поиск людей и публичных групп">
+    </div>
+    <div class="list" id="list">
+      <div class="item" id="globalItem"><div class="avatar">🌐</div><div><div class="title">Общий чат</div><div class="subtitle">Писать могут все • история не сохраняется</div></div></div>
+    </div>
+  </aside>
+<main class="main">
+    <div id="authBox" class="box" style="margin:20px auto;max-width:420px">
+      <h3>Вход / Регистрация</h3>
+      <div class="row"><input id="nick" placeholder="Ник" style="flex:1"></div>
+      <div class="row"><input id="pass" type="password" placeholder="Пароль" style="flex:1"></div>
+      <div class="row"><input id="avatarInput" placeholder="Эмодзи для авы (например 😎)" style="flex:1"></div>
+      <div style="display:flex;gap:8px;justify-content:center">
+        <button id="reg" class="btn">Регистрация</button>
+        <button id="login" class="btn">Войти</button>
+      </div>
+      <div style="margin-top:8px" class="small">После входа ты появишься в списке у других (через уведомление)</div>
+    </div>
+
+    <div id="chatArea" class="hidden">
+      <div class="chatHeader" id="chatHeader">
+        <div class="avatar" id="chatAvatar">💬</div>
+        <div>
+          <div id="chatTitle" class="title">Чат</div>
+          <div id="chatSub" class="small">подробности</div>
+        </div>
+        <div style="flex:1"></div>
+        <button id="backToList" class="iconbtn hide-mobile">⬅</button>
+      </div>
+
+      <div id="messages" class="chatMessages"></div>
+
+      <div class="inputRow" id="inputRow">
+        <input id="messageInput" placeholder="Написать сообщение...">
+        <button id="sendBtn" class="btn">Отправить</button>
+      </div>
+    </div>
+  </main>
 </div>
 
-<div id="chatList">
-  <button class="chat-item" id="openGlobal">
-    🌐 <b>Общий чат</b>
-  </button>
-  <div id="chats"></div>
+<!-- settings -->
+<div id="settings" class="settingsPanel hidden">
+  <div style="display:flex;justify-content:space-between;align-items:center"><b>Настройки</b><button id="closeSettings" class="iconbtn">✖</button></div>
+  <div style="margin-top:8px">
+    <label>Тема</label>
+    <select id="themeSelect" style="width:100%;padding:8px;border-radius:8px;border:0;margin-top:6px">
+      <option value="dark">🌙 Тёмная</option>
+      <option value="light">☀️ Светлая</option>
+      <option value="neon">💜 Фиолетовая неоновая</option>
+      <option value="red">❤️ Красно-чёрная</option>
+      <option value="soft">🌈 Пастель</option>
+    </select>
+  </div>
+  <div style="margin-top:8px">
+    <label>Твой аватар (эмодзи)</label>
+    <input id="myAvatar" placeholder="😎" style="width:100%;padding:8px;border-radius:8px;border:0;margin-top:6px">
+  </div>
 </div>
 
-<div id="chatWindow">
-  <div id="chatMessages"></div>
-  <div id="msgInput">
-    <input id="msg" placeholder="Сообщение">
-    <button id="send">➤</button>
+<!-- create group modal -->
+<div id="createModal" class="modal hidden">
+  <div class="box">
+    <h3>Создать группу</h3>
+    <div class="row"><input id="groupName" placeholder="Название группы" style="flex:1"></div>
+    <div class="row"><input id="groupEmoji" placeholder="Эмодзи для авы (например 🎮)" style="flex:1"></div>
+    <div class="row">
+      <label><input type="radio" name="gtype" value="public" checked> Публичная</label>
+      <label style="margin-left:8px"><input type="radio" name="gtype" value="private"> По приглашению</label>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button id="createCancel" class="btn">Отмена</button>
+      <button id="createOk" class="btn">Создать</button>
+    </div>
   </div>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-const s = io()
-let me = {nick:"", avatar:""}
-let theme = "dark"
-let currentChat = null
-let chats = {} // {nick:{avatar:""}}
+/* Простая, но рабочая логика клиента для TalkSpace.
+   Работает с server.js который у тебя уже есть.
+   - отправка chatAll и chatPm
+   - механика групп через спец-сообщения
+   - поиск, публичные группы, приглашения
+   - localStorage для сохранения чатов/групп/настроек
+*/
 
-function setTheme(t) {
-  document.body.classList.toggle("light", t=="light")
-  document.getElementById("themeToggle").textContent = t=="light" ? "☀️" : "🌙"
+// ---- helpers ----
+const byId = id => document.getElementById(id)
+const save = (k,v) => localStorage.setItem(k, JSON.stringify(v))
+const load = k => { try { return JSON.parse(localStorage.getItem(k)||'null') } catch(e){ return null }}
+
+// ---- state ----
+const socket = io()
+let me = load('ts_me') || {nick:'', avatar:'😎'}
+let users = load('ts_users') || {}   // nick -> {avatar}
+let groups = load('ts_groups') || {} // id -> {name,emoji,public,members:[]}
+let chatsLocal = load('ts_chats') || {} // key-> [msgs], key: user:nick or group:id or 'global' but global not saved
+let current = {type:'none', id:null} // type: global|user|group
+let searchTimer = null
+// ---- UI refs ----
+const listEl = byId('list'), messagesEl = byId('messages'), chatArea = byId('chatArea'), authBox = byId('authBox')
+const nickI = byId('nick'), passI = byId('pass'), avatarI = byId('avatarInput')
+const regBtn = byId('reg'), loginBtn = byId('login'), sendBtn = byId('sendBtn'), msgI = byId('messageInput')
+const createBtn = byId('createBtn'), createModal = byId('createModal'), createOk = byId('createOk'), createCancel = byId('createCancel')
+const groupNameI = byId('groupName'), groupEmojiI = byId('groupEmoji')
+const settingsBtn = byId('settingsBtn'), settingsPanel = byId('settings'), closeSettings = byId('closeSettings'), themeSelect = byId('themeSelect'), myAvatarI = byId('myAvatar')
+const searchI = byId('search'), globalItem = byId('globalItem'), backToList = byId('backToList'), homeBtn = byId('homeBtn')
+
+// ---- init UI from storage ----
+function applyTheme(t){
+  document.body.classList.remove('light')
+  if(t==='light') document.body.classList.add('light')
+  else if(t==='neon'){ document.body.style.setProperty('--bg','#070014'); document.body.style.setProperty('--card','#140022'); document.body.style.setProperty('--text','#ff66ff'); document.body.style.setProperty('--accent','#ff66ff'); }
+  else if(t==='red'){ document.body.style.setProperty('--bg','#100000'); document.body.style.setProperty('--card','#200000'); document.body.style.setProperty('--text','#ff9b9b'); document.body.style.setProperty('--accent','#ff4d4d'); }
+  else if(t==='soft'){ document.body.style.setProperty('--bg','#fbfbff'); document.body.style.setProperty('--card','#f6f7ff'); document.body.style.setProperty('--text','#235'); document.body.style.setProperty('--accent','#8aa'); }
 }
-setTheme("dark")
+const settings = load('ts_settings') || {theme:'dark'}
+applyTheme(settings.theme)
+themeSelect.value = settings.theme
+if(me.avatar) myAvatarI.value = me.avatar
 
-document.getElementById("themeToggle").onclick = () => {
-  theme = theme=="dark" ? "light" : "dark"
-  setTheme(theme)
+// ---- util: render list of users and groups ----
+function renderList(q){
+  listEl.innerHTML = ''
+  // global first (already in markup but re-add to keep order)
+  listEl.appendChild(globalItem)
+  // groups public
+  const ql = (q||'').toLowerCase()
+  // my groups header
+  const myHeader = el('div',{class:'item'}, elAvatar('👥'), elText('Мои группы','Посмотреть свои группы'))
+  myHeader.onclick = ()=>{ showMyGroups() }
+  listEl.appendChild(myHeader)
+  // public groups
+  Object.keys(groups).forEach(id=>{
+    const g = groups[id]
+    if(g.public && (ql===''  g.name.toLowerCase().includes(ql)  (g.emoji||'').includes(ql))){
+      const node = el('div',{class:'item'}, elAvatar(g.emoji||'👥'), elText(g.name, g.public ? 'Публичная группа' : 'Приватная'))
+      node.onclick = ()=>{ openChatGroup(id) }
+      listEl.appendChild(node)
+    }
+  })
+  // users
+  const usersArr = Object.keys(users).filter(n=>n!==me.nick).sort()
+  usersArr.forEach(n=>{
+    if(ql && !n.toLowerCase().includes(ql)) return
+    const u = users[n]
+    const node = el('div',{class:'item'}, elAvatar(u.avatar||'😎'), elText(n,'Личное сообщение'))
+    node.onclick = ()=> openChatUser(n)
+    listEl.appendChild(node)
+  })
 }
 
-document.getElementById("reg").onclick = async () => {
-  const nick = document.getElementById("nick").value
-const pass = document.getElementById("pass").value
-  const avatar = document.getElementById("avatar").value
-  const res = await fetch("/register",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({nick,pass,avatar})})
-  const r = await res.json()
-  alert(r.ok ? "Регистрация успешна!" : r.msg)
+// ---- small dom helpers ----
+function el(tag,attrs, ...children){
+  const d = document.createElement(tag||'div')
+  if(attrs) Object.keys(attrs).forEach(k=>d.setAttribute(k, attrs[k]))
+  children.forEach(c=>{ if(typeof c==='string') d.appendChild(document.createTextNode(c)); else d.appendChild(c) })
+  return d
+}
+function elAvatar(ch){ const a = document.createElement('div'); a.className='avatar'; a.textContent = ch||'😎'; return a }
+function elText(title, sub){ const d = document.createElement('div'); const t = document.createElement('div'); t.className='title'; t.textContent = title; d.appendChild(t); if(sub){ const s=document.createElement('div'); s.className='subtitle'; s.textContent=sub; d.appendChild(s)} return d }
+
+// ---- chat UI ----
+function openChatGlobal(){
+  current = {type:'global', id:'global'}
+  showChatHeader('Общий чат','Все могут писать (история не сохраняется)', '🌐')
+  loadMessagesToUI('global')
+}
+function openChatUser(nick){
+  current = {type:'user', id:nick}
+  showChatHeader(nick,'Личное сообщение', users[nick]?.avatar || '😎')
+  loadMessagesToUI('user:'+nick)
+}
+function openChatGroup(id){
+  const g = groups[id]
+  current = {type:'group', id}
+  showChatHeader(g.name, g.public ? 'Публичная группа' : 'Приватная (по приглашению)', g.emoji||'👥')
+  loadMessagesToUI('group:'+id)
+}
+function showChatHeader(title, sub, avatar){
+  byId('chatTitle').textContent = title
+  byId('chatSub').textContent = sub
+  byId('chatAvatar').textContent = avatar||'💬'
+  authBox.style.display = 'none'
+  chatArea.classList.remove('hidden')
+  byId('chatArea') // ensure visible
+}
+function showMyGroups(){
+  listEl.innerHTML = ''
+  listEl.appendChild(globalItem)
+  const header = el('div',{class:'item'}, elAvatar('👥'), elText('Мои группы','Нажми чтобы вернуться'))
+  header.onclick = ()=> renderList(searchI.value)
+  listEl.appendChild(header)
+  Object.keys(groups).forEach(id=>{
+    const g = groups[id]
+    if((g.members||[]).includes(me.nick)){
+      const node = el('div',{class:'item'}, elAvatar(g.emoji||'👥'), elText(g.name, g.public ? 'Публичная' : 'По приглашению'))
+      node.onclick = ()=> openChatGroup(id)
+      listEl.appendChild(node)
+    }
+  })
 }
 
-document.getElementById("log").onclick = async () => {
-  const nick = document.getElementById("nick").value
-  const pass = document.getElementById("pass").value
-  const res = await fetch("/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({nick,pass})})
-  const r = await res.json()
-  if(!r.ok) return alert("Неверный логин или пароль")
-  me.nick = nick; me.avatar = r.avatar || "https://i.ibb.co/2ZpWJ2d/user.png"
-  document.getElementById("auth").style.display="none"
-  document.getElementById("chatList").classList.add("active")
-  s.emit("join", me.nick)
+// ---- messages store/keys ----
+// key examples: 'user:Bob', 'group:123', 'global' (global not saved)
+function chatKeyFor(type,id){
+  if(type==='user') return 'user:'+id
+  if(type==='group') return 'group:'+id
+  return id
+}
+function loadMessagesToUI(key){
+  messagesEl.innerHTML = ''
+  const arr = chatsLocal[key] || []
+  arr.forEach(m => appendMsgToUI(m))
+  scrollBottom()
+}
+function appendMsgToStoreAndUI(key,msg){
+  chatsLocal[key] = chatsLocal[key] || []
+  chatsLocal[key].push(msg)
+  save('ts_chats', chatsLocal)
+  appendMsgToUI(msg)
+}
+function appendMsgToUI(m){
+  const d = document.createElement('div')
+  d.className = 'msg ' + (m.from === me.nick ? 'me' : 'other')
+  const av = document.createElement('div'); av.className='av'; av.textContent = (m.avatar  (users[m.from] && users[m.from].avatar)  '😎')
+  const t = document.createElement('div'); t.style.display='flex'; t.style.flexDirection='column'
+  const bold = document.createElement('div'); bold.style.fontWeight='700'; bold.textContent = m.from
+  const text = document.createElement('div'); text.textContent = m.text
+  t.appendChild(bold); t.appendChild(text)
+  if(m.from === me.nick){ d.appendChild(text) } else { d.appendChild(av); d.appendChild(t) }
+  // for my messages show text (align right)
+  if(m.from === me.nick){ d.innerHTML = '<div style="padding:0 8px">'+escapeHtml(m.text)+'</div>' }
+  messagesEl.appendChild(d)
+}
+function scrollBottom(){ messagesEl.scrollTop = messagesEl.scrollHeight }
+
+// ---- escape simple
+function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+
+// ---- networking: special commands encoded in messages ----
+function announcePresence(){
+  // broadcast to everyone your avatar so clients learn about users
+  const payload = {cmd:'TS_USER', avatar: me.avatar}
+  socket.emit('chatAll', JSON.stringify(payload))
+}
+function createGroupBroadcast(id, group){
+  // public group creation broadcast so everyone sees it
+  const payload = {cmd:'TS_CREATE_GROUP', id, group}
+  socket.emit('chatAll', JSON.stringify(payload))
+}
+function sendInvite(toNick, groupId){
+  // send a chatPm invite specifically to user
+  const payload = {cmd:'TS_INVITE', groupId, from: me.nick}
+  socket.emit('chatPm', {to: toNick, msg: JSON.stringify(payload)})
 }
 
-document.getElementById("openGlobal").onclick = ()=>{
-  currentChat = "global"
-  openChat("Общий чат", "🌐")
-}
-
-function openChat(nick, avatar){
-  document.getElementById("chatList").classList.remove("active")
-  document.getElementById("chatWindow").classList.add("active")
-  document.getElementById("backBtn").style.display="inline"
-  document.getElementById("chatMessages").innerHTML=""
-}
-
-document.getElementById("backBtn").onclick = ()=>{
-  document.getElementById("chatWindow").classList.remove("active")
-  document.getElementById("chatList").classList.add("active")
-  document.getElementById("backBtn").style.display="none"
-  currentChat = null
-}
-
-document.getElementById("send").onclick = ()=>{
-  const msg = document.getElementById("msg").value
-  if(!msg) return
-  if(currentChat=="global") s.emit("chatAll", msg)
-  else if(currentChat) s.emit("chatPm", {to:currentChat, msg})
-  document.getElementById("msg").value=""
-}
-
-s.on("chatAll", d=>{
-  if(currentChat=="global"){
-    addMsg(d.nick, d.msg, d.nick==me.nick)
-  }
-  if(!chats[d.nick] && d.nick!=me.nick){
-    addChat(d.nick)
-  }
-})
-
-s.on("chatPm", d=>{
-  if(d.from==me.nick || d.to==me.nick){
-    const partner = d.from==me.nick ? d.to : d.from
-    if(!chats[partner]) addChat(partner)
-    if(currentChat==partner){
-      addMsg(d.from, d.msg, d.from==me.nick)
+// ---- socket handlers ----
+socket.on('connect', ()=>{ /* connected */ })
+socket.on('chatAll', d=>{
+  // d: {nick, msg}
+  try{
+    const msg = typeof d.msg === 'string' ? JSON.parse(d.msg) : null
+    if(msg && msg.cmd==='TS_USER'){
+      users[d.nick] = users[d.nick] || {}
+      users[d.nick].avatar = msg.avatar  users[d.nick].avatar  '😎'
+      save('ts_users', users)
+      renderList(searchI.value)
+      return
+    }
+    if(msg && msg.cmd==='TS_CREATE_GROUP'){
+      const id = msg.id; const g = msg.group
+      groups[id] = g
+      save('ts_groups', groups)
+      renderList(searchI.value)
+      return
+    }
+    // normal public message: show in global if open
+    if(current.type==='global'){
+      appendMsgToStoreAndUI('global', {from: d.nick, text: d.msg, avatar: users[d.nick]?.avatar})
+    }
+    // also record that user exists
+    users[d.nick] = users[d.nick] || {avatar: '😎'}
+    save('ts_users', users)
+    renderList(searchI.value)
+  }catch(e){
+    // if not JSON, treat as plain
+    if(current.type==='global'){
+      appendMsgToStoreAndUI('global', {from: d.nick, text: d.msg, avatar: users[d.nick]?.avatar})
     }
   }
 })
 
-function addChat(nick){
-  const div=document.createElement("div")
-  div.className="chat-item"
-  const img=document.createElement("img")
-  img.src="https://i.ibb.co/2ZpWJ2d/user.png"
-  div.appendChild(img)
-  div.append(nick)
-  div.onclick=()=>{currentChat=nick; openChat(nick,img.src)}
-  document.getElementById("chats").appendChild(div)
-  chats[nick]={avatar:img.src}
+socket.on('chatPm', d=>{
+  // d: {from, to, msg}
+  // if msg is JSON command: invite or group message etc
+  let parsed = null
+  try{ parsed = JSON.parse(d.msg) } catch(e){ parsed = null }
+  // invite handling
+  if(parsed && parsed.cmd==='TS_INVITE'){
+    if(d.to === me.nick){
+      const gid = parsed.groupId
+      // join group: add to groups and mark membership
+      if(groups[gid]){
+        groups[gid].members = groups[gid].members || []
+        if(!groups[gid].members.includes(me.nick)) groups[gid].members.push(me.nick)
+        save('ts_groups', groups)
+        alert('Тебя пригласили в группу: ' + groups[gid].name)
+        renderList(searchI.value)
+      }
+    }
+    return
+  }
+  // group message? to startsWith group:
+  if(typeof d.to === 'string' && d.to.startsWith('group:')){
+    const gid = d.to.split(':',2)[1]
+    const key = 'group:'+gid
+    // only show if member or public
+    const g = groups[gid]
+    const isMember = g && (g.public  (g.members[]).includes(me.nick))
+    if(!g) {
+      // If group unknown, create minimal placeholder (public unknown?) - skip if private
+      // We'll not auto-add private unknown groups
+      // But if message exists, add placeholder and mark member if to includes me
+      groups[gid] = groups[gid] || {name: gid, emoji:'👥', public:false, members:[]}
+      save('ts_groups', groups)
+    }
+    // add to store for everyone (server saved it)
+    appendMsgToStoreAndUI(key, {from: d.from, text: d.msg, avatar: users[d.from]?.avatar})
+    renderList(searchI.value)
+    return
+  }
+  // normal pm between users
+  const key = 'user:' + (d.from === me.nick ? d.to : d.from)
+  appendMsgToStoreAndUI(key, {from: d.from, text: d.msg, avatar: users[d.from]?.avatar})
+  // if it's for me or from me, ensure user is known
+  users[d.from] = users[d.from] || {avatar:'😎'}
+  save('ts_users', users)
+  renderList(searchI.value)
+})
+
+// ---- actions: register/login/send/create/invite ----
+regBtn.onclick = async ()=>{
+  const nick = nickI.value.trim(); const pass = passI.value; const avatar = avatarI.value.trim() || '😎'
+  if(!nick || !pass) return alert('Введите ник и пароль')
+  const res = await fetch('/register',{method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({nick, pass, avatar})})
+  const r = await res.json()
+  if(r.ok){ alert('Готово, теперь войди'); nickI.value = nick } else alert(r.msg || 'Ошибка')
+}
+loginBtn.onclick = async ()=>{
+  const nick = nickI.value.trim(); const pass = passI.value
+  if(!nick || !pass) return alert('Введите ник и пароль')
+  const res = await fetch('/login',{method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({nick, pass})})
+  const r = await res.json()
+  if(!r.ok) return alert('Неверный логин или пароль')
+me.nick = nick; me.avatar = r.avatar  (avatarI.value.trim()  '😎')
+  save('ts_me', me)
+  // hide auth, show UI
+  authBox.style.display = 'none'
+  chatArea.classList.remove('hidden')
+  // announce presence to all
+  socket.emit('join', me.nick)
+  announcePresence()
+  renderList('')
+  openChatGlobal()
 }
 
-function addMsg(nick,msg,isMe){
-  const div=document.createElement("div")
-  div.className="msg "+(isMe?"me":"other")
-  div.innerHTML=(isMe?"":"<img src='https://i.ibb.co/2ZpWJ2d/user.png'>")+msg
-  document.getElementById("chatMessages").appendChild(div)
-  div.scrollIntoView()
-}
-</script>
-</body>
-</html>
+sendBtn.onclick = ()=>{
+  const text = msgI.value.trim()
+  if(!text) return
+  if(current.type==='global'){
+    socket.emit('chatAll', text)
+    appendMsgToStoreAndUI('global', {from: me.nick, text, avatar: me.avatar})
+  } else if(current.type==='user'){
+    const to = current.i
