@@ -2,144 +2,274 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>TalkSpace</title>
 <style>
+:root {
+  --bg: #000;
+  --text: #0f0;
+  --bubble-me: #032;
+  --bubble-other: #060;
+  --card: #0a0a0a;
+  --accent: #0f0;
+}
+.light {
+  --bg: #fff;
+  --text: #00f;
+  --bubble-me: #ccf;
+  --bubble-other: #bbf;
+  --card: #eef;
+  --accent: #00f;
+}
 body {
-  font-family: Arial;
+  font-family: Arial, sans-serif;
   background-color: var(--bg);
   color: var(--text);
   margin: 0;
+  height: 100vh;
   display: flex;
   flex-direction: column;
+}
+header {
+  background: var(--card);
+  display: flex;
   align-items: center;
-}
-#box {
-  width: 400px;
-  margin-top: 20px;
+  justify-content: space-between;
   padding: 10px;
-  border-radius: 10px;
-  background-color: var(--card);
-  box-shadow: 0 0 10px #0004;
+  box-shadow: 0 2px 5px #0004;
 }
-input, button, select {
-  margin: 5px;
+#themeToggle {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 22px;
+  cursor: pointer;
+}
+#chatList, #chatWindow {
+  flex: 1;
+  display: none;
+  flex-direction: column;
+}
+#chatList.active, #chatWindow.active {
+  display: flex;
+}
+#chats {
+  flex: 1;
+  overflow-y: auto;
+}
+.chat-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-bottom: 1px solid #333;
+  cursor: pointer;
+}
+.chat-item:hover { background: #111; }
+.chat-item img {
+  width: 40px; height: 40px; border-radius: 50%;
+}
+#chatMessages {
+  flex: 1;
+  padding: 10px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+.msg {
+  max-width: 75%;
+  margin: 5px 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  word-wrap: break-word;
+}
+.me { align-self: flex-end; background: var(--bubble-me); }
+.other { align-self: flex-start; background: var(--bubble-other); }
+.msg img {
+  width: 24px; height: 24px; border-radius: 50%; margin-right: 5px; vertical-align: middle;
+}
+#msgInput {
+  display: flex;
+  padding: 10px;
+  background: var(--card);
+}
+#msgInput input {
+  flex: 1;
+  border: none;
+  padding: 8px;
+  border-radius: 5px;
+}
+#msgInput button {
+  background: var(--accent);
+  border: none;
+  margin-left: 5px;
+  padding: 8px 12px;
+  border-radius: 5px;
+  color: #000;
+  font-weight: bold;
+}
+#backBtn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 20px;
+  cursor: pointer;
+  margin-right: 10px;
+}
+#auth {
+  margin: auto;
+  text-align: center;
+}
+#auth input, #auth button {
+  display: block;
+  margin: 10px auto;
   padding: 8px;
   border-radius: 5px;
   border: none;
 }
-button { cursor: pointer; }
-#chat { height: 250px; overflow-y: auto; border-radius: 5px; padding: 5px; background-color: var(--bg2); }
-.msg { margin: 3px 0; padding: 5px; border-radius: 5px; }
-.me { background: var(--me); }
-.other { background: var(--other); }
-#theme { position: fixed; top: 10px; right: 10px; }
+#auth button {
+  background: var(--accent);
+  color: #000;
+  font-weight: bold;
+}
 </style>
 </head>
 <body>
-<button id="theme">Сменить тему</button>
-<div id="box">
-<h2>TalkSpace</h2>
+<header>
+  <div id="headerLeft">
+    <button id="backBtn" style="display:none">←</button>
+    <h2>TalkSpace</h2>
+  </div>
+  <button id="themeToggle">🌙</button>
+</header>
+
 <div id="auth">
-<input id="nick" placeholder="Ник">
-<input id="pass" type="password" placeholder="Пароль">
-<input id="avatar" placeholder="Ссылка на аватар">
-<button id="reg">Регистрация</button>
-<button id="log">Войти</button>
+  <h3>Вход или регистрация</h3>
+  <input id="nick" placeholder="Ник">
+  <input id="pass" type="password" placeholder="Пароль">
+  <input id="avatar" placeholder="Ссылка на аватар (необязательно)">
+  <button id="reg">Регистрация</button>
+  <button id="log">Войти</button>
 </div>
 
-<div id="main" style="display:none">
-<p id="userInfo"></p>
-<select id="mode">
-<option value="all">Общий чат</option>
-<option value="pm">Личные</option>
-</select>
-<input id="to" placeholder="Кому" style="display:none">
-<div id="chat"></div>
-<input id="msg" placeholder="Сообщение">
-<button id="send">Отправить</button>
+<div id="chatList">
+  <button class="chat-item" id="openGlobal">
+    🌐 <b>Общий чат</b>
+  </button>
+  <div id="chats"></div>
 </div>
+
+<div id="chatWindow">
+  <div id="chatMessages"></div>
+  <div id="msgInput">
+    <input id="msg" placeholder="Сообщение">
+    <button id="send">➤</button>
+  </div>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
 const s = io()
-let nick = ""
+let me = {nick:"", avatar:""}
 let theme = "dark"
+let currentChat = null
+let chats = {} // {nick:{avatar:""}}
 
 function setTheme(t) {
-  if (t == "dark") {
-    document.documentElement.style.setProperty("--bg", "#000")
-    document.documentElement.style.setProperty("--bg2", "#111")
-    document.documentElement.style.setProperty("--card", "#0a0a0a")
-    document.documentElement.style.setProperty("--text", "#0f0")
-    document.documentElement.style.setProperty("--me", "#030")
-    document.documentElement.style.setProperty("--other", "#050")
-  } else {
-    document.documentElement.style.setProperty("--bg", "#fff")
-    document.documentElement.style.setProperty("--bg2", "#eef")
-    document.documentElement.style.setProperty("--card", "#ddf")
-    document.documentElement.style.setProperty("--text", "#00f")
-    document.documentElement.style.setProperty("--me", "#ccf")
-    document.documentElement.style.setProperty("--other", "#bbf")
-  }
+  document.body.classList.toggle("light", t=="light")
+  document.getElementById("themeToggle").textContent = t=="light" ? "☀️" : "🌙"
 }
 setTheme("dark")
 
-document.getElementById("theme").onclick = () => {
-  theme = theme == "dark" ? "light" : "dark"
+document.getElementById("themeToggle").onclick = () => {
+  theme = theme=="dark" ? "light" : "dark"
   setTheme(theme)
 }
 
 document.getElementById("reg").onclick = async () => {
   const nick = document.getElementById("nick").value
-  const pass = document.getElementById("pass").value
+const pass = document.getElementById("pass").value
   const avatar = document.getElementById("avatar").value
-  const res = await fetch("/register", {
-    method:"POST", headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({nick, pass, avatar})
-  })
+  const res = await fetch("/register",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({nick,pass,avatar})})
   const r = await res.json()
-  alert(r.ok ? "Регистрация успешна" : r.msg)
+  alert(r.ok ? "Регистрация успешна!" : r.msg)
 }
 
 document.getElementById("log").onclick = async () => {
-  nick = document.getElementById("nick").value
+  const nick = document.getElementById("nick").value
   const pass = document.getElementById("pass").value
-  const res = await fetch("/login", {
-    method:"POST", headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({nick, pass})
-  })
+  const res = await fetch("/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({nick,pass})})
   const r = await res.json()
-  if (!r.ok) return alert("Неверный логин или пароль")
-  document.getElementById("auth").style.display = "none"
-  document.getElementById("main").style.display = "block"
-  document.getElementById("userInfo").innerHTML = "Вы вошли как " + nick
-  s.emit("join", nick)
+  if(!r.ok) return alert("Неверный логин или пароль")
+  me.nick = nick; me.avatar = r.avatar || "https://i.ibb.co/2ZpWJ2d/user.png"
+  document.getElementById("auth").style.display="none"
+  document.getElementById("chatList").classList.add("active")
+  s.emit("join", me.nick)
 }
 
-document.getElementById("send").onclick = () => {
+document.getElementById("openGlobal").onclick = ()=>{
+  currentChat = "global"
+  openChat("Общий чат", "🌐")
+}
+
+function openChat(nick, avatar){
+  document.getElementById("chatList").classList.remove("active")
+  document.getElementById("chatWindow").classList.add("active")
+  document.getElementById("backBtn").style.display="inline"
+  document.getElementById("chatMessages").innerHTML=""
+}
+
+document.getElementById("backBtn").onclick = ()=>{
+  document.getElementById("chatWindow").classList.remove("active")
+  document.getElementById("chatList").classList.add("active")
+  document.getElementById("backBtn").style.display="none"
+  currentChat = null
+}
+
+document.getElementById("send").onclick = ()=>{
   const msg = document.getElementById("msg").value
-  const mode = document.getElementById("mode").value
-  const to = document.getElementById("to").value
-  if (mode == "all") s.emit("chatAll", msg)
-  else s.emit("chatPm", {to, msg})
-  document.getElementById("msg").value = ""
+  if(!msg) return
+  if(currentChat=="global") s.emit("chatAll", msg)
+  else if(currentChat) s.emit("chatPm", {to:currentChat, msg})
+  document.getElementById("msg").value=""
 }
 
-document.getElementById("mode").onchange = e => {
-  document.getElementById("to").style.display = e.target.value == "pm" ? "inline" : "none"
-}
-s.on("chatAll", d => addMsg(d.nick + ": " + d.msg, d.nick == nick))
-s.on("chatPm", d => {
-  if (d.from == nick || d.to == nick)
-    addMsg("(ЛС) " + d.from + " -> " + d.to + ": " + d.msg, d.from == nick)
+s.on("chatAll", d=>{
+  if(currentChat=="global"){
+    addMsg(d.nick, d.msg, d.nick==me.nick)
+  }
+  if(!chats[d.nick] && d.nick!=me.nick){
+    addChat(d.nick)
+  }
 })
 
-function addMsg(text, me) {
-  const div = document.createElement("div")
-  div.className = "msg " + (me ? "me" : "other")
-  div.innerText = text
-  document.getElementById("chat").appendChild(div)
+s.on("chatPm", d=>{
+  if(d.from==me.nick || d.to==me.nick){
+    const partner = d.from==me.nick ? d.to : d.from
+    if(!chats[partner]) addChat(partner)
+    if(currentChat==partner){
+      addMsg(d.from, d.msg, d.from==me.nick)
+    }
+  }
+})
+
+function addChat(nick){
+  const div=document.createElement("div")
+  div.className="chat-item"
+  const img=document.createElement("img")
+  img.src="https://i.ibb.co/2ZpWJ2d/user.png"
+  div.appendChild(img)
+  div.append(nick)
+  div.onclick=()=>{currentChat=nick; openChat(nick,img.src)}
+  document.getElementById("chats").appendChild(div)
+  chats[nick]={avatar:img.src}
+}
+
+function addMsg(nick,msg,isMe){
+  const div=document.createElement("div")
+  div.className="msg "+(isMe?"me":"other")
+  div.innerHTML=(isMe?"":"<img src='https://i.ibb.co/2ZpWJ2d/user.png'>")+msg
+  document.getElementById("chatMessages").appendChild(div)
   div.scrollIntoView()
 }
 </script>
